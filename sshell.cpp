@@ -9,11 +9,12 @@ int main(int argc, char const *argv[])
 {
     printf("Works!\n");
 
-    // char *args[MAX_LINE / 2 + 1]; /* max of 40 arguments */
-    string args;
+    char *args[MAX_LINE / 2 + 1]; /* max of 40 arguments */
+    char input[MAX_LINE];
     int should_run = 1;
-    int i, upper, wstatus;
+    int i, wstatus;
     pid_t pid, w;
+    bool childwait = false;
 
     while (should_run)
     {
@@ -23,34 +24,60 @@ int main(int argc, char const *argv[])
         /** fork a child to execute command (using one of the exec calls)
              Break out of loop if user types ‘quit’ or ‘exit’ then exit
         program **/
-        getline(cin, args); // second argument is of type streamsize and not int
-        cout << args << endl;
+        cin.getline(input, sizeof(input));
 
-        if (args == "exit" || args == "quit")
+        // argument tokenizer
+        char *tok = strtok(input, " ");
+        i = 0;
+
+        while (tok != NULL and i < sizeof(args))
+        {
+            if (tok[0] == '&')
+            {
+                childwait = true;
+            }
+            args[i] = tok;
+            ++i;
+            tok = strtok(NULL, " ");
+        }
+        printf("finished tokenizing\n");
+
+        if (strcmp(args[0], &"exit"[0]) == 0 || strcmp(args[0], &"quit"[0]) == 0)
         {
             should_run = 0;
         }
         else
         {
-            pid = fork(); // errors on my mingw env on windows (unistd not included?)
+            pid = fork();
+            printf("created fork\n");
             switch (pid)
             {
             case -1:
-                perror("fork creation failed");
+                perror("fork creation failed\n");
                 break;
             case 0:
-                // execlp(args);
+                printf("running %s\n", *args);
+                if (execvp(args[0], &args[0]) < 0)
+                {
+                    perror("could not execute command");
+                }
                 printf("fork finished\n");
                 break;
             default:
-                printf("parent finished\n");
-
                 // waiting for children to finish
-                w = wait(&wstatus);
-                if (!WIFEXITED(wstatus))
+                if (childwait)
                 {
-                    printf("child not terminated normally\n");
+                    w = wait(&wstatus);
+                    if (WIFEXITED(wstatus))
+                    {
+                        printf("child exited with code %d\n", WEXITSTATUS(wstatus));
+                    }
+                    else
+                    {
+                        printf("child not terminated normally\n");
+                    }
                 }
+                printf("parent finished\n");
                 break;
             }
         }
