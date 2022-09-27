@@ -19,10 +19,10 @@ int main(int argc, char const *argv[])
     int should_run = 1;
     int i, wstatus;
     pid_t pid, w;
-    bool childwait = false;
 
     while (should_run)
     {
+        bool childwait = false;
         printf("osh>");
         fflush(stdout);
 
@@ -30,34 +30,37 @@ int main(int argc, char const *argv[])
              Break out of loop if user types ‘quit’ or ‘exit’ then exit
         program **/
         // cin.ignore(255, '\n');
-        memset(input, 0, 41);
+        // memset(input, 0, 41);
         cin.getline(input, sizeof(input));
 
         // argument tokenizer
-        char *tok = strtok(input, " &");
+        char *tok = strtok(input, " ");
         i = 0;
 
-        while (tok != NULL and i < sizeof(input))
+        while (tok != NULL)
         {
-            if (tok[i] == '&')
+            if (strcmp(tok, "&") == 0)
             {
                 childwait = true;
             }
-            args[i] = tok;
-            ++i;
-            tok = strtok(NULL, " &");
+            else
+            {
+                args[i] = tok;
+                printf("%s\n", args[i]);
+                ++i;
+            }
+            tok = strtok(NULL, " ");
         }
-        args[MAX_LINE / 2] = NULL;
+        args[i] = NULL;
         printf("finished tokenizing\n");
 
-        if (strcmp(args[0], &"exit"[0]) == 0 || strcmp(args[0], &"quit"[0]) == 0)
+        if (strcmp(args[0], "exit") == 0 || strcmp(args[0], "quit") == 0)
         {
             should_run = 0;
         }
         else
         {
-            // pid = fork();
-            pid = 1;
+            pid = fork();
             printf("created fork\n");
             switch (pid)
             {
@@ -65,7 +68,8 @@ int main(int argc, char const *argv[])
                 perror("fork creation failed\n");
                 break;
             case 0:
-                printf("running %s\n", *args);
+                printf("running %s\n", args[0]);
+                cout << args[0] << endl;
                 if (execvp(*args, (char *const *)args) < 0)
                 {
                     perror("could not execute command");
@@ -73,11 +77,6 @@ int main(int argc, char const *argv[])
                 printf("fork finished\n");
                 break;
             default:
-                cout << &args[0] << &args[1] << endl;
-                if (execvp(*args, (char *const *)args) < 0)
-                {
-                    perror("could not execute command");
-                }
                 // waiting for children to finish
                 if (childwait)
                 {
