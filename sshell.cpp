@@ -46,7 +46,6 @@ int main(int argc, char const *argv[])
             else
             {
                 args[i] = tok;
-                printf("%s\n", args[i]);
                 ++i;
             }
             tok = strtok(NULL, " ");
@@ -87,7 +86,7 @@ int main(int argc, char const *argv[])
                     }
                     else
                     {
-                        printf("child not terminated normally\n");
+                        perror("child not terminated normally\n");
                     }
                 }
                 printf("parent finished\n");
